@@ -18,19 +18,19 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 
-  home:
+  app:
     image: bitnami/express:5.0.1
     command: ["/usr/bin/bash", "-c", "npm install -g express && node /app/server.js"]
     volumes:
-      - ${PWD}/home/server.js:/app/server.js
+      - ${PWD}/app/server.js:/app/server.js
     ports:
       - 3000
     labels:
       - traefik.enable=true
-      - traefik.http.routers.home.rule=PathPrefix(`/`)
-      - traefik.http.routers.home.middlewares=oauth2-proxy
-      - traefik.http.routers.home.entrypoints=web
-      - traefik.http.services.home.loadbalancer.server.port=3000
+      - traefik.http.routers.app.rule=PathPrefix(`/`)
+      - traefik.http.routers.app.middlewares=oauth2-proxy
+      - traefik.http.routers.app.entrypoints=web
+      - traefik.http.services.app.loadbalancer.server.port=3000
 
   whoami:
     image: traefik/whoami:v1.10
