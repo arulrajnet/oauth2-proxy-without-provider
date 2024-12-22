@@ -22,7 +22,7 @@ services:
     image: bitnami/express:5.0.1
     command: ["/usr/bin/bash", "-c", "npm install -g express && node /app/server.js"]
     volumes:
-      - ${PWD}/app/server.js:/app/server.js
+      - ${PWD}/app:/app
     ports:
       - 3000
     labels:
@@ -30,8 +30,11 @@ services:
       - traefik.http.routers.app.rule=PathPrefix(`/`)
       - traefik.http.routers.app.middlewares=oauth2-proxy
       - traefik.http.routers.app.entrypoints=web
+      - traefik.http.routers.app.priority=100
       - traefik.http.services.app.loadbalancer.server.port=3000
-
+      - traefik.http.routers.app-noauth.rule=PathPrefix(`/login`) || PathPrefix(`/static`)
+      - traefik.http.routers.app-noauth.entrypoints=web
+      - traefik.http.routers.app-noauth.priority=200
   whoami:
     image: traefik/whoami:v1.10
     ports:
@@ -54,7 +57,7 @@ services:
       - --cookie-refresh=30m
       - --cookie-secret=cbiGJkwts9Ye6XD2Pbt_L1jLcipIZBDMfMuqxDWRbeQ=
       - --custom-sign-in-logo=https://avatars.githubusercontent.com/u/4029521?v=4
-      - --custom-templates-dir=/templates
+      # - --custom-templates-dir=/templates
       # This is required if not using a https entrypoint
       - --cookie-secure=false
       - --email-domain=*
@@ -71,7 +74,6 @@ services:
       - --upstream=static://202
     volumes:
       - ${PWD}/.htpasswd:/.htpasswd
-      - ${PWD}/templates:/templates
     expose:
       - 4181
     labels:
@@ -80,4 +82,7 @@ services:
       - traefik.http.routers.oauth2-proxy.entrypoints=web
       - traefik.http.middlewares.oauth2-proxy.forwardauth.address=http://oauth2-proxy:4181
       - traefik.http.middlewares.oauth2-proxy.forwardauth.authResponseHeaders=X-Auth-Request-User,X-Auth-Request-Email,X-Forwarded-User,X-Forwarded-Groups,X-Forwarded-Email,X-Forwarded-Preferred-Username
+      # - traefik.http.middlewares.oauth2-proxy.errors.service=app
+      # - traefik.http.middlewares.oauth2-proxy.errors.status=401
+      # - traefik.http.middlewares.oauth2-proxy.errors.query=/login
       - traefik.http.services.oauth2-proxy.loadbalancer.server.port=4181

@@ -18,7 +18,7 @@ app.get('/login', (req, res) => {
   res.send(`
     <head>
       <title>Login Page</title>
-      <style src="/static/style.css"></style>
+      <link rel="stylesheet" href="/static/styles.css">
     </head>
     <h1>Login Page</h1>
     <form action="/auth/sign_in" method="post">
@@ -33,7 +33,7 @@ app.get('/login', (req, res) => {
 });
 
 // Expose static files
-app.use(express.static('static'));
+app.use(express.static('/app'));
 
 const PORT = 3000;
 app.listen(PORT, () => {
