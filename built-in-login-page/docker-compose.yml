@@ -22,7 +22,7 @@ services:
     image: bitnami/express:5.0.1
     command: ["/usr/bin/bash", "-c", "npm install -g express && node /app/server.js"]
     volumes:
-      - ${PWD}/app/server.js:/app/server.js
+      - ${PWD}/app:/app
     ports:
       - 3000
     labels:
@@ -61,6 +61,8 @@ services:
       - --footer=Powered by <a href='https://mycompany.com'>My Company</a>
       - --htpasswd-file=/.htpasswd
       - --http-address=0.0.0.0:4181
+      - --pass-access-token=true
+      - --pass-authorization-header=true
       - --provider=google
       - --proxy-prefix=/auth
       - --reverse-proxy=true

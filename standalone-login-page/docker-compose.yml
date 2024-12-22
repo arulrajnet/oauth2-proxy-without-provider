@@ -30,7 +30,6 @@ services:
       - traefik.http.routers.app.rule=PathPrefix(`/`)
       - traefik.http.routers.app.middlewares=oauth2-proxy
       - traefik.http.routers.app.entrypoints=web
-      - traefik.http.routers.app.priority=100
       - traefik.http.services.app.loadbalancer.server.port=3000
       - traefik.http.routers.app-noauth.rule=PathPrefix(`/login`) || PathPrefix(`/static`)
       - traefik.http.routers.app-noauth.entrypoints=web
@@ -64,6 +63,8 @@ services:
       - --footer=Powered by <a href='https://mycompany.com'>My Company</a>
       - --htpasswd-file=/.htpasswd
       - --http-address=0.0.0.0:4181
+      - --pass-access-token=true
+      - --pass-authorization-header=true
       - --provider=google
       - --proxy-prefix=/auth
       - --reverse-proxy=true
@@ -82,7 +83,7 @@ services:
       - traefik.http.routers.oauth2-proxy.entrypoints=web
       - traefik.http.middlewares.oauth2-proxy.forwardauth.address=http://oauth2-proxy:4181
       - traefik.http.middlewares.oauth2-proxy.forwardauth.authResponseHeaders=X-Auth-Request-User,X-Auth-Request-Email,X-Forwarded-User,X-Forwarded-Groups,X-Forwarded-Email,X-Forwarded-Preferred-Username
-      # - traefik.http.middlewares.oauth2-proxy.errors.service=app
-      # - traefik.http.middlewares.oauth2-proxy.errors.status=401
-      # - traefik.http.middlewares.oauth2-proxy.errors.query=/login
+      - traefik.http.middlewares.oauth2-proxy-error.errors.service=app@docker
+      - traefik.http.middlewares.oauth2-proxy-error.errors.status=401,403
+      - traefik.http.middlewares.oauth2-proxy-error.errors.query=/login
       - traefik.http.services.oauth2-proxy.loadbalancer.server.port=4181
