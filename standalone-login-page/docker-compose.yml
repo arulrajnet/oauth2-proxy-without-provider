@@ -1,0 +1,83 @@
+
+services:
+  traefik:
+    image: traefik:v3.2.3
+    command:
+      - --log.level=DEBUG
+      - --accesslog=true
+      - --global.sendanonymoususage=false
+      - --global.checknewversion=false
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entryPoints.web.address=:80
+    ports:
+      - 80:80
+    depends_on:
+      - oauth2-proxy
+      - whoami
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  app:
+    image: bitnami/express:5.0.1
+    command: ["/usr/bin/bash", "-c", "npm install -g express && node /app/server.js"]
+    volumes:
+      - ${PWD}/app/server.js:/app/server.js
+    ports:
+      - 3000
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.app.rule=PathPrefix(`/`)
+      - traefik.http.routers.app.middlewares=oauth2-proxy
+      - traefik.http.routers.app.entrypoints=web
+      - traefik.http.services.app.loadbalancer.server.port=3000
+
+  whoami:
+    image: traefik/whoami:v1.10
+    ports:
+      - 80
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.whoami.rule=PathPrefix(`/whoami`)
+      - traefik.http.routers.whoami.middlewares=oauth2-proxy
+      - traefik.http.routers.whoami.entrypoints=web
+      - traefik.http.services.whoami.loadbalancer.server.port=80
+
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.7.1
+    command:
+      - --client-id=dummy-client-id
+      - --client-secret=dummy-client-secret
+      # 7 days
+      - --cookie-expire=168h
+      - --cookie-name=_session
+      - --cookie-refresh=30m
+      - --cookie-secret=cbiGJkwts9Ye6XD2Pbt_L1jLcipIZBDMfMuqxDWRbeQ=
+      - --custom-sign-in-logo=https://avatars.githubusercontent.com/u/4029521?v=4
+      - --custom-templates-dir=/templates
+      # This is required if not using a https entrypoint
+      - --cookie-secure=false
+      - --email-domain=*
+      - --footer=Powered by <a href='https://mycompany.com'>My Company</a>
+      - --htpasswd-file=/.htpasswd
+      - --http-address=0.0.0.0:4181
+      - --provider=google
+      - --proxy-prefix=/auth
+      - --reverse-proxy=true
+      - --set-authorization-header
+      - --set-xauthrequest
+      # don't set traefik error page.
+      - --skip-provider-button=false
+      - --upstream=static://202
+    volumes:
+      - ${PWD}/.htpasswd:/.htpasswd
+      - ${PWD}/templates:/templates
+    expose:
+      - 4181
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.oauth2-proxy.rule=PathPrefix(`/auth`)
+      - traefik.http.routers.oauth2-proxy.entrypoints=web
+      - traefik.http.middlewares.oauth2-proxy.forwardauth.address=http://oauth2-proxy:4181
+      - traefik.http.middlewares.oauth2-proxy.forwardauth.authResponseHeaders=X-Auth-Request-User,X-Auth-Request-Email,X-Forwarded-User,X-Forwarded-Groups,X-Forwarded-Email,X-Forwarded-Preferred-Username
+      - traefik.http.services.oauth2-proxy.loadbalancer.server.port=4181
